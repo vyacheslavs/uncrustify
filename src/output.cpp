@@ -1559,7 +1559,6 @@ static bool kw_fnc_pfunction(chunk_t *cmt, unc_text& out_txt) {
                 class_name  = chunk_get_next_ncnl(class_name);
                 if (class_name) {
                     class_name_s = class_name->str.c_str();
-                    fprintf(stderr, "found class_name: %s\n", class_name_s.c_str());
                 }
             }
         }
