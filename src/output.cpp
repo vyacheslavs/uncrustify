@@ -1508,11 +1508,10 @@ static bool kw_fnc_pfunction(chunk_t *cmt, unc_text& out_txt) {
          return true;
 
     // rewind back until we meet type or dc_member
-
     chunk_t * return_type_chunk = fcn;
     while ( (return_type_chunk = chunk_get_prev_ncnl(return_type_chunk))!=NULL ) {
         int rewind_back = 0;
-        while ( return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER ) {
+        while ( return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER || return_type_chunk->type == CT_BYREF || return_type_chunk->type == CT_QUALIFIER) {
             return_type_chunk = chunk_get_prev_ncnl(return_type_chunk);
             if (!return_type_chunk)
                 break;
@@ -1525,8 +1524,12 @@ static bool kw_fnc_pfunction(chunk_t *cmt, unc_text& out_txt) {
     }
 
     // now write out return type here
-    while (return_type_chunk && (return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER)) {
+    bool first_entr = true;
+    while (return_type_chunk && (return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER || return_type_chunk->type == CT_BYREF || return_type_chunk->type == CT_QUALIFIER)) {
+        if (!first_entr)
+            out_txt.append(" ");
         out_txt.append(return_type_chunk->str);
+        first_entr = false;
         return_type_chunk = chunk_get_next(return_type_chunk);
     }
 
@@ -1585,18 +1588,42 @@ static bool kw_fnc_pfunction(chunk_t *cmt, unc_text& out_txt) {
         out_txt.append("::");
     }
 
+   // get the name of function
    chunk_t * tmp  = chunk_get_prev_ncnl(fcn);
    if (!tmp)
         return false;
 
-   while ((tmp = chunk_get_next(tmp)) != NULL)
+    if ( tmp->type == CT_OPERATOR ) {
+        out_txt.append("operator ");
+    }
+
+   while ((tmp = chunk_get_next_ncnl(tmp)) != NULL)
    {
         out_txt.append(tmp->str);
 
+        bool add_space = true;
+        if (tmp->type == CT_DC_MEMBER)
+            add_space = false;
+
+        chunk_t * peek = chunk_get_next_ncnl(tmp);
+        if (peek && peek->type == CT_DC_MEMBER)
+            add_space = false;
+
         if ( tmp == fpc )
             break;
-        out_txt.append(" ");
+
+        if (add_space)
+            out_txt.append(" ");
    }
+
+    if (tmp!=NULL) {
+        tmp = chunk_get_next_ncnl(tmp);
+        if ( tmp && tmp->type == CT_QUALIFIER ) {
+            out_txt.append(" ");
+            out_txt.append(tmp->str);
+        }
+    }
+
    return true;
 }
 
