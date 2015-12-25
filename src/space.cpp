@@ -559,6 +559,12 @@ static argval_t do_space(chunk_t *first, chunk_t *second, int& min_sp, bool comp
       return(cpd.settings[UO_sp_cpp_lambda_assign].a);
    }
 
+   if ((first->type == CT_SQUARE_CLOSE) && (second->type == CT_SPAREN_OPEN) &&
+        first->parent_type == CT_CPP_LAMBDA) {
+
+        // fprintf(stderr, "working on"
+   }
+
    // Handle the special lambda case for C++11:
    //    [](Something arg){.....}
    if ((cpd.settings[UO_sp_cpp_lambda_paren].a != AV_IGNORE) &&

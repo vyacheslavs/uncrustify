@@ -962,8 +962,12 @@ void indent_text(void)
             frm.pse[frm.pse_tos].brace_indent = 1 + (pc->brace_level * indent_size);
             indent_column = frm.pse[frm.pse_tos].brace_indent;
             frm.pse[frm.pse_tos].indent     = indent_column + indent_size;
+            if (pc->parent_type == CT_CPP_LAMBDA ) {
+                frm.pse[frm.pse_tos].indent -= indent_size;
+            }
             frm.pse[frm.pse_tos].indent_tab = frm.pse[frm.pse_tos].indent;
             frm.pse[frm.pse_tos].indent_tmp = frm.pse[frm.pse_tos].indent;
+
 
             frm.pse[frm.pse_tos - 1].indent_tmp = frm.pse[frm.pse_tos].indent_tmp;
          }
