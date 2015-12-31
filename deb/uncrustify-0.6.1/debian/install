@@ -1,0 +1,5 @@
+install/0/file_header /opt/uncrustify/share
+install/0/class_header /opt/uncrustify/share
+install/0/uncrustify /opt/uncrustify/bin
+install/0/uncrustify.cfg /opt/uncrustify/share
+install/0/func_header /opt/uncrustify/share

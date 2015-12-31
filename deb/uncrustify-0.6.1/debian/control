@@ -1,0 +1,11 @@
+Source: uncrustify
+Section: misc
+Priority: optional
+Maintainer: S. Vyacheslav <k@canva.org>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.9.2
+
+Package: uncrustify
+Architecture: amd64
+Description: Uncrustify your sources
+ A highly configurable, easily modifiable source code beautifier for C, C++, C#, ObjectiveC, D, Java, Pawn and VALA
