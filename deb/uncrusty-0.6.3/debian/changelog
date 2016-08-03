@@ -1,0 +1,17 @@
+uncrusty (0.6.3) wily; urgency=medium
+
+  * fix func_def
+
+ -- S. Vyacheslav <k@canva.org>  Thu, 31 Dec 2015 14:06:16 +0300
+
+uncrusty (0.6.2) wily; urgency=medium
+
+  * fix bin
+
+ -- S. Vyacheslav <k@canva.org>  Thu, 31 Dec 2015 14:06:16 +0300
+
+uncrusty (0.6.1) wily; urgency=low
+
+  * First version
+
+ -- S. Vyacheslav <k@canva.org>  Thu, 31 Dec 2015 09:16:34 +0300
