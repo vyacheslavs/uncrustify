@@ -1090,17 +1090,23 @@ static chunk_t *align_var_def_brace(chunk_t *start, int span, int *p_nl_count)
    }
 
    /* Override the span, if this is a struct/union */
-   if ((start->parent_type == CT_STRUCT) ||
+   if ((start->parent_type == CT_STRUCT) || (start->parent_type == CT_CLASS ) ||
        (start->parent_type == CT_UNION))
    {
       myspan   = cpd.settings[UO_align_var_struct_span].n;
       mythresh = cpd.settings[UO_align_var_struct_thresh].n;
       mygap    = cpd.settings[UO_align_var_struct_gap].n;
+
+      // fprintf(stderr, "INCLASS thr= %d, gap = %d, span = %d\n", mythresh, mygap, myspan);
+
    }
    else
    {
+      myspan = 0;
       mythresh = cpd.settings[UO_align_var_def_thresh].n;
       mygap    = cpd.settings[UO_align_var_def_gap].n;
+
+      //fprintf(stderr, "thr= %d, gap = %d\n", mythresh, mygap);
    }
 
    /* can't be any variable definitions in a "= {" block */
@@ -1227,9 +1233,12 @@ static chunk_t *align_var_def_brace(chunk_t *start, int span, int *p_nl_count)
          continue;
       }
 
+      LOG_FMT(LAVDB,"token_type: %s token: %s\n", get_token_name(pc->type), pc->str.c_str());
+
       /* If this is a variable def, update the max_col */
       if (!(pc->flags & PCF_IN_CLASS_BASE) &&
           (pc->type != CT_FUNC_CLASS_DEF) &&
+          (pc->type != CT_FUNC_DEF) &&
           (pc->type != CT_FUNC_CLASS_PROTO) &&
           ((pc->flags & align_mask) == PCF_VAR_1ST) &&
           ((pc->level == (start->level + 1)) ||
@@ -1238,7 +1247,7 @@ static chunk_t *align_var_def_brace(chunk_t *start, int span, int *p_nl_count)
       {
          if (!did_this_line)
          {
-            LOG_FMT(LAVDB, "    add=[%s] line=%d col=%d level=%d\n",
+            LOG_FMT(LAVDB, "    add=[%s] line=%d col=%d level=%d (did_this_line)\n",
                     pc->str.c_str(), pc->orig_line, pc->orig_col, pc->level);
 
             as.Add(step_back_over_member(pc));

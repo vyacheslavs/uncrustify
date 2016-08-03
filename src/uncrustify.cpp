@@ -1472,7 +1472,7 @@ static void uncrustify_file(const file_mem& fm, FILE *pfout,
        */
       if (cpd.func_hdr.data.size() > 0)
       {
-         add_func_header(CT_FUNC_DEF, cpd.func_hdr);
+         add_func_header(CT_FUNC_PROTO, cpd.func_hdr);
       }
       if (cpd.class_hdr.data.size() > 0)
       {

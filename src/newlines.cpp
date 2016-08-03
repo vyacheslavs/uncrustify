@@ -2348,11 +2348,20 @@ void newlines_cleanup_braces(bool first)
             }
          }
       }
-      else if ((pc->type == CT_SQUARE_OPEN) && (pc->parent_type == CT_OC_MSG))
+      else if ((pc->type == CT_SQUARE_OPEN) )
       {
-         if (cpd.settings[UO_nl_oc_msg_args].b)
-         {
-            newline_oc_msg(pc);
+
+        if (pc->parent_type == CT_CPP_LAMBDA ) {
+            //BOOKMARK
+            newline_force_before(pc);
+        }
+
+
+         if ((pc->parent_type == CT_OC_MSG)) {
+             if (cpd.settings[UO_nl_oc_msg_args].b)
+             {
+                newline_oc_msg(pc);
+             }
          }
       }
       else if (pc->type == CT_STRUCT)

@@ -1478,6 +1478,7 @@ static bool kw_fcn_message(chunk_t *cmt, unc_text& out_txt)
 }
 
 
+
 static bool kw_fcn_function(chunk_t *cmt, unc_text& out_txt)
 {
    chunk_t *fcn = get_next_function(cmt);
@@ -1494,6 +1495,137 @@ static bool kw_fcn_function(chunk_t *cmt, unc_text& out_txt)
    return false;
 }
 
+#include <stack>
+
+static bool kw_fnc_pfunction(chunk_t *cmt, unc_text& out_txt) {
+   chunk_t *fcn = get_next_function(cmt);
+
+   if (!fcn)
+      return false;
+
+   chunk_t * fpc = chunk_get_next_type(fcn, CT_FPAREN_CLOSE, fcn->level);
+   if (fpc == NULL)
+         return true;
+
+    // rewind back until we meet type or dc_member
+    chunk_t * return_type_chunk = fcn;
+    while ( (return_type_chunk = chunk_get_prev_ncnl(return_type_chunk))!=NULL ) {
+        int rewind_back = 0;
+        while ( return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER || return_type_chunk->type == CT_BYREF || return_type_chunk->type == CT_QUALIFIER) {
+            return_type_chunk = chunk_get_prev_ncnl(return_type_chunk);
+            if (!return_type_chunk)
+                break;
+            rewind_back++;
+        }
+        if (rewind_back>0) {
+            return_type_chunk = chunk_get_next_ncnl(return_type_chunk);
+            break;
+        }
+    }
+
+    // now write out return type here
+    bool first_entr = true;
+    while (return_type_chunk && (return_type_chunk->type == CT_TYPE || return_type_chunk->type == CT_DC_MEMBER || return_type_chunk->type == CT_BYREF || return_type_chunk->type == CT_QUALIFIER)) {
+        if (!first_entr)
+            out_txt.append(" ");
+        out_txt.append(return_type_chunk->str);
+        first_entr = false;
+        return_type_chunk = chunk_get_next(return_type_chunk);
+    }
+
+    // add space after return type
+    out_txt.append(" ");
+    std::stack<std::string> namespaces;
+    std::string class_name_s;
+
+    if ( ((fcn->flags & PCF_IN_CLASS) || (fcn->flags & PCF_IN_STRUCT)) && fcn->level>0) {
+        // now guess the all namespaces
+        int lvl = fcn->level - 1;
+        while (lvl>0) {
+            chunk_t * namespace_c = chunk_get_prev_type(fcn, CT_BRACE_OPEN, lvl); // we are at struct
+            if (namespace_c && lvl>0) {
+                namespace_c = chunk_get_prev_type(namespace_c, CT_NAMESPACE, lvl-1);
+                if (namespace_c) {
+                    namespace_c = chunk_get_next_ncnl(namespace_c);
+                    if (namespace_c) {
+                        namespaces.push(namespace_c->str.c_str());
+                    }
+                }
+            }
+            lvl--;
+        }
+        // now guess the class name
+        chunk_t * class_name = chunk_get_prev_type(fcn, CT_BRACE_OPEN, fcn->level - 1);
+        if (class_name) {
+            class_name = chunk_get_prev_type(class_name, ((fcn->flags & PCF_IN_STRUCT) ? CT_STRUCT : CT_CLASS), class_name->level);
+            if (class_name) {
+                class_name  = chunk_get_next_ncnl(class_name);
+                if (class_name) {
+                    class_name_s = class_name->str.c_str();
+                }
+            }
+        }
+    }
+
+    std::string namespaces_s;
+    // выводим все namespace-ы
+    if (!namespaces.empty()) {
+        while (!namespaces.empty()) {
+            if (!namespaces_s.empty())
+                namespaces_s += "::";
+            namespaces_s += namespaces.top();
+            namespaces.pop();
+        }
+    }
+
+    if (!class_name_s.empty())
+        if (!namespaces_s.empty())
+            namespaces_s += "::";
+        namespaces_s += class_name_s;
+
+    if (!namespaces_s.empty()) {
+        out_txt.append(namespaces_s);
+        out_txt.append("::");
+    }
+
+   // get the name of function
+   chunk_t * tmp  = chunk_get_prev_ncnl(fcn);
+   if (!tmp)
+        return false;
+
+    if ( tmp->type == CT_OPERATOR ) {
+        out_txt.append("operator ");
+    }
+
+   while ((tmp = chunk_get_next_ncnl(tmp)) != NULL)
+   {
+        out_txt.append(tmp->str);
+
+        bool add_space = true;
+        if (tmp->type == CT_DC_MEMBER)
+            add_space = false;
+
+        chunk_t * peek = chunk_get_next_ncnl(tmp);
+        if (peek && peek->type == CT_DC_MEMBER)
+            add_space = false;
+
+        if ( tmp == fpc )
+            break;
+
+        if (add_space)
+            out_txt.append(" ");
+   }
+
+    if (tmp!=NULL) {
+        tmp = chunk_get_next_ncnl(tmp);
+        if ( tmp && tmp->type == CT_QUALIFIER ) {
+            out_txt.append(" ");
+            out_txt.append(tmp->str);
+        }
+    }
+
+   return true;
+}
 
 /**
  * Adds the javadoc-style @param and @return stuff, based on the params and
@@ -1610,6 +1742,7 @@ static bool kw_fcn_javaparam(chunk_t *cmt, unc_text& out_txt)
             prev = tmp;
          }
       }
+
    }
 
    /* Do the return stuff */
@@ -1640,11 +1773,10 @@ static bool kw_fcn_fclass(chunk_t *cmt, unc_text& out_txt)
    {
       return false;
    }
-   if (fcn->flags & PCF_IN_CLASS)
+   if ((fcn->flags & PCF_IN_CLASS) || (fcn->flags & PCF_IN_STRUCT))
    {
-      /* if inside a class, we need to find to the class name */
       chunk_t *tmp = chunk_get_prev_type(fcn, CT_BRACE_OPEN, fcn->level - 1);
-      tmp = chunk_get_prev_type(tmp, CT_CLASS, tmp->level);
+      tmp = chunk_get_prev_type(tmp, ((fcn->flags & PCF_IN_STRUCT) ? CT_STRUCT : CT_CLASS ), tmp->level);
       tmp = chunk_get_next_ncnl(tmp);
       while (chunk_is_token(chunk_get_next_ncnl(tmp), CT_DC_MEMBER))
       {
@@ -1693,6 +1825,7 @@ static const kw_subst_t kw_subst_table[] =
    { "$(function)",  kw_fcn_function  },
    { "$(javaparam)", kw_fcn_javaparam },
    { "$(fclass)",    kw_fcn_fclass    },
+   { "$(pfunction)", kw_fnc_pfunction },
 };
 
 
